@@ -1,4 +1,4 @@
-/* THIS FILE WILL BE OVERWRITTEN BY DEV-C++ */
+/* THIS FILE WILL BE OVERWRITTEN BY Red Panda C++ */
 /* DO NOT EDIT ! */
 
 #ifndef PROJECT1_PRIVATE_H
@@ -16,8 +16,8 @@
 #define INTERNAL_NAME	""
 #define LEGAL_COPYRIGHT	""
 #define LEGAL_TRADEMARKS	""
-#define ORIGINAL_FILENAME	""
-#define PRODUCT_NAME	""
+#define ORIGINAL_FILENAME	"project1.exe"
+#define PRODUCT_NAME	"project1"
 #define PRODUCT_VERSION	"1.0.0.0"
 
 #endif /*PROJECT1_PRIVATE_H*/

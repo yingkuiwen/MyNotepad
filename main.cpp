@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <commctrl.h>
+#include <string>
 
 #include "main.h"
 
@@ -11,6 +12,7 @@ char g_szChild[] = "MyMDIChild";
 HINSTANCE g_hInst;
 HWND g_hMDIClient, g_hStatusBar, g_hToolBar;
 HWND g_hMainWindow;
+int createNewFile(HWND hwnd);
 
 BOOL LoadFile(HWND hEdit, LPSTR pszFileName) {
 	HANDLE hFile;
@@ -126,7 +128,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpszCmdPar
 		return -1;
 	}
 
-	g_hMainWindow = CreateWindowEx(WS_EX_APPWINDOW,g_szAppName,"MDI File Editor",WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
+	g_hMainWindow = CreateWindowEx(WS_EX_APPWINDOW,g_szAppName,"My Notepad",WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
 		CW_USEDEFAULT,
@@ -137,8 +139,10 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpszCmdPar
 		MessageBox(0, "No Window", "Oh Oh...", MB_ICONEXCLAMATION | MB_OK);
 		return -1;
 	}
-
+	
 	ShowWindow(g_hMainWindow, nCmdShow);
+	// 创建新文件
+	createNewFile(g_hMainWindow);
 	UpdateWindow(g_hMainWindow);
 
 	while(GetMessage(&Msg, NULL, 0, 0)) {
@@ -430,4 +434,26 @@ LRESULT CALLBACK MDIChildWndProc(HWND hwnd, UINT Message, WPARAM wParam,LPARAM l
 		}
 	}
 	return DefMDIChildProc(hwnd, Message, wParam, lParam);
+}
+
+/* 新建文件 */
+int createNewFile(HWND hwnd) {
+	MDICREATESTRUCT mcs;
+	HWND hChild;
+	
+	mcs.szTitle = "[Untitled]";
+	mcs.szClass = g_szChild;
+	mcs.hOwner  = g_hInst;
+	mcs.x = mcs.cx = CW_USEDEFAULT;
+	mcs.y = mcs.cy = CW_USEDEFAULT;
+	mcs.style = MDIS_ALLCHILDSTYLES;
+	
+	hChild = (HWND)SendMessage(g_hMDIClient, WM_MDICREATE,0, (LPARAM)&mcs);
+	if(!hChild) {
+		MessageBox(hwnd, "创建新文件出错", "提示",MB_ICONEXCLAMATION | MB_OK);
+	}
+	// 子窗口最大化
+	SendMessage(g_hMDIClient, WM_MDIMAXIMIZE, (WPARAM)hChild, 0);
+	
+	return 1;
 }

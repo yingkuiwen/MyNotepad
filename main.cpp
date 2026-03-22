@@ -18,20 +18,33 @@ BOOL LoadFile(HWND hEdit, LPSTR pszFileName) {
 	HANDLE hFile;
 	BOOL bSuccess = FALSE;
 	
-	hFile = CreateFile(pszFileName, GENERIC_READ, FILE_SHARE_READ, NULL,
-	OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+	hFile = CreateFileA(pszFileName, GENERIC_READ, FILE_SHARE_READ, NULL,
+						OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if(hFile != INVALID_HANDLE_VALUE) {
-		DWORD dwFileSize;
-		dwFileSize = GetFileSize(hFile, NULL);
+		DWORD dwFileSize = GetFileSize(hFile, NULL);
 		if(dwFileSize != 0xFFFFFFFF) {
-			LPSTR pszFileText;
-			pszFileText = LPSTR(GlobalAlloc(GPTR, dwFileSize + 1));
+			LPSTR pszFileText = (LPSTR)GlobalAlloc(GPTR, dwFileSize + 1);
 			if(pszFileText != NULL) {
 				DWORD dwRead;
 				if(ReadFile(hFile, pszFileText, dwFileSize, &dwRead, NULL)) {
-					pszFileText[dwFileSize] = 0; // Null terminator
-					if(SetWindowText(hEdit, pszFileText))
-						bSuccess = TRUE; // It worked!
+					pszFileText[dwFileSize] = 0;
+					
+					// 关键修改：将 UTF-8 转换为 Unicode
+					// 计算转换后需要的宽字符长度
+					int wideLen = MultiByteToWideChar(CP_UTF8, 0, pszFileText, -1, NULL, 0);
+					if(wideLen > 0) {
+						// 分配宽字符缓冲区
+						LPWSTR pszWideText = (LPWSTR)GlobalAlloc(GPTR, wideLen * sizeof(WCHAR));
+						if(pszWideText != NULL) {
+							// 执行 UTF-8 到 UTF-16 的转换
+							MultiByteToWideChar(CP_UTF8, 0, pszFileText, -1, pszWideText, wideLen);
+							
+							// 使用宽字符版本设置窗口文本
+							bSuccess = SetWindowTextW(hEdit, pszWideText);
+							
+							GlobalFree(pszWideText);
+						}
+					}
 				}
 				GlobalFree(pszFileText);
 			}
@@ -140,7 +153,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpszCmdPar
 		return -1;
 	}
 	
-	ShowWindow(g_hMainWindow, nCmdShow);
+	ShowWindow(g_hMainWindow, SW_SHOWMAXIMIZED);
 	// 创建新文件
 	createNewFile(g_hMainWindow);
 	UpdateWindow(g_hMainWindow);
@@ -234,20 +247,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 					PostMessage(hwnd, WM_CLOSE, 0, 0);
 					break;
 				case CM_FILE_NEW: {
-					MDICREATESTRUCT mcs;
-					HWND hChild;
-					
-					mcs.szTitle = "[Untitled]";
-					mcs.szClass = g_szChild;
-					mcs.hOwner  = g_hInst;
-					mcs.x = mcs.cx = CW_USEDEFAULT;
-					mcs.y = mcs.cy = CW_USEDEFAULT;
-					mcs.style = MDIS_ALLCHILDSTYLES;
-					
-					hChild = (HWND)SendMessage(g_hMDIClient, WM_MDICREATE,0, (LPARAM)&mcs);
-					if(!hChild) {
-						MessageBox(hwnd, "MDI Child creation failed.", "Oh Oh...",MB_ICONEXCLAMATION | MB_OK);
-					}
+					createNewFile(hwnd);
 					break;
 				}
 				case CM_FILE_OPEN: {
